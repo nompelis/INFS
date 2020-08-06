@@ -2,9 +2,9 @@
   A light-weight collection of simple functions to handle files in the
   unix filesystem. The collection is small but is growing...
 
-  Copyright 2014 Ioannis Nompelis
+  Copyright 2014-2020 Ioannis Nompelis
   Ioannis Nompelis  <nompelis@nobelware.com>           Created: 20140925
-  Ioannis Nompelis  <nompelis@nobelware.com>     Last modified: 20140925
+  Ioannis Nompelis  <nompelis@nobelware.com>     Last modified: 20200806
  ************************************************************************/
 
 #include <stdio.h>
@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include <sys/time.h>
 
@@ -243,4 +244,134 @@ printf("Found %d files matching \n",iret);
    return(0);
 }
 */
+
+
+/*
+ * Function to traverse the entire depth of a directory tree and perform
+ * certain operations to each of the regular files encountered in the
+ * directory.
+ * Ioannis Nompelis <nompelis#nobelware.com> Created:       20200806
+ * Ioannis Nompelis <nompelis#nobelware.com> Last modified: 20200806
+ */
+
+int infs_TraverseDirTree( char *dir, int depth,
+                          int (*func_dir_pre)( void * ),  void *arg_dir_pre,
+                          int (*func_dir_post)( void * ), void *arg_dir_post,
+                          int (*func_reg)( void * ),      void *arg_reg )
+{
+#ifdef _DEBUG_
+   char FUNC[] = "infs_TraverseDirTree";
+#endif
+   DIR *dp;
+   struct dirent entry, *result;
+   int ierr=0;
+
+
+   // make sure the user gave us a valid directory name
+   if( dir == NULL ) {
+      fprintf( stdout," e  Bad directory name or bad usage of schnauzer\n" );
+      return(1);
+   }
+
+   // open the directory
+#ifdef _DEBUG_
+   fprintf( stdout," [%s:%d]  Opening directory \"%s\" \n",FUNC,depth, dir);
+#endif
+   dp = opendir(dir);
+   if( dp == NULL ) {
+      fprintf (stdout," e   Could not open directory!\n" );
+      return(2);
+   }
+
+   // change current directory
+   if( depth > 0 ) chdir( dir );
+
+   // sweep through the contents of the directory and use recersion
+#ifdef _DEBUG_
+   fprintf( stdout," [%s]  Traversing through directory's contents \n",FUNC);
+#endif
+   while( ierr == 0 ) {
+      struct stat fs;
+      int type, ient, istat=-100;
+
+      // read the next entry; do error trapping and make termination decision
+      ient = readdir_r( dp, &entry, &result );
+      if( ient != 0 ) {
+         fprintf( stdout, " e  Could not readdir() (%d) \n", ient );
+         ierr = -1;
+      } else {
+         if( result != NULL ) {
+#ifdef _DEBUG_
+            fprintf( stdout," [%s]  About to stat() \"%s\" \n",FUNC,
+                     entry.d_name );
+#endif
+            istat = stat( entry.d_name, &fs );
+            if( istat != 0 ) {
+               fprintf( stdout, " e  Could not stat() entry\n" );
+               perror("INFS stat()");
+               ierr = -2;
+            }
+         } else {
+#ifdef _DEBUG_
+            fprintf( stdout," [%s]  End of directory \"%s\" \n",FUNC, dir);
+#endif
+            ierr = 1;
+         }
+      }
+
+      // continue if no errors and no termination
+      if( istat == 0 ) {
+         if(S_ISDIR( fs.st_mode) != 0 ) type = 1;
+         if(S_ISCHR( fs.st_mode) != 0 ) type = 2;
+         if(S_ISBLK( fs.st_mode) != 0 ) type = 3;
+         if(S_ISREG( fs.st_mode) != 0 ) type = 4;
+         if(S_ISLNK( fs.st_mode) != 0 ) type = 5;
+         if(S_ISFIFO( fs.st_mode) != 0 ) type = 6;
+         if(S_ISSOCK( fs.st_mode) != 0 ) type = 7;
+#ifdef _DEBUG_
+         fprintf( stdout, "  ENTRY: \"%s\"  (%d) \n", entry.d_name, type );
+#endif
+
+         // execute code for regular file
+         // (NO ERROR TRAPPING)
+         if( type == 4 ) {
+            if( func_reg != NULL ) (*func_reg)( arg_reg );
+         }
+
+         // execute code for directory, recurse, and execute code...
+         // (NO ERROR TRAPPING)
+         if( type == 1 &&
+           ( strcmp( entry.d_name, "." ) != 0 &&          // not in self
+             strcmp( entry.d_name, ".." ) != 0 ) ) {      // not in parent
+            if( func_dir_pre != NULL ) (*func_dir_pre)( arg_dir_pre );
+
+            ient = infs_TraverseDirTree( entry.d_name, depth+1,
+                                func_dir_pre,  arg_dir_pre,
+                                func_dir_post, arg_dir_post,
+                                func_reg,      arg_reg );
+            if( ient != 0 ) {
+#ifdef _DEBUG_
+               fprintf( stdout," [%s]  Returned error! \"%d\" \n",FUNC, ient);
+#endif
+               ierr = -3;
+            }
+
+            if( func_dir_post != NULL ) (*func_dir_post)( arg_dir_post );
+         }
+      }
+   }
+#ifdef _DEBUG_
+   fprintf( stdout," [%s:%d]  Closing directory \"%s\" \n",FUNC,depth, dir);
+#endif
+   (void) closedir(dp);
+
+   // change current directory
+   if( depth > 0 ) chdir( ".." );
+
+   if( ierr != 1 ) {
+      return ierr;
+   } else {
+      return 0;
+   }
+}
 

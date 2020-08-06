@@ -15,4 +15,8 @@ int infs_FilterExt(int num_entries, struct my_file *files, char *ext);
 
 void infs_FilterExtReset(int num_entries, struct my_file *files);
 
+int infs_TraverseDirTree( char *dir, int depth,
+                          int (*func_dir_pre)( void * ),  void *arg_dir_pre,
+                          int (*func_dir_post)( void * ), void *arg_dir_post,
+                          int (*func_reg)( void * ),      void *arg_reg );
 
