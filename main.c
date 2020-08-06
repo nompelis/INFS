@@ -17,9 +17,9 @@
 #include "infs.h"
 
 // a dummy function that prints a string
-int dummy_func( void *arg )
+int dummy_func( void *arg, char *name )
 {
-   printf("Hello: \"%s\"\n", (char *) arg );
+   printf("Hello: \"%s\" (%s)\n", (char *) arg, name );
    return 0;
 }
 
@@ -28,7 +28,7 @@ int main() {
    int num;
    struct my_file *files;
    int iret;
-   int (*func_p)( void * );
+   int (*func_p)( void *, char * );
 
    (void) infs_ReadDir(&num, &files, ".");
    iret = infs_FilterExt(num, files, ".tif");

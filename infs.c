@@ -255,9 +255,9 @@ printf("Found %d files matching \n",iret);
  */
 
 int infs_TraverseDirTree( char *dir, int depth,
-                          int (*func_dir_pre)( void * ),  void *arg_dir_pre,
-                          int (*func_dir_post)( void * ), void *arg_dir_post,
-                          int (*func_reg)( void * ),      void *arg_reg )
+                 int (*func_dir_pre)( void *, char * ),  void *arg_dir_pre,
+                 int (*func_dir_post)( void *, char * ), void *arg_dir_post,
+                 int (*func_reg)( void *, char * ),      void *arg_reg )
 {
 #ifdef _DEBUG_
    char FUNC[] = "infs_TraverseDirTree";
@@ -335,7 +335,7 @@ int infs_TraverseDirTree( char *dir, int depth,
          // execute code for regular file
          // (NO ERROR TRAPPING)
          if( type == 4 ) {
-            if( func_reg != NULL ) (*func_reg)( arg_reg );
+            if( func_reg != NULL ) (*func_reg)( arg_reg, entry.d_name );
          }
 
          // execute code for directory, recurse, and execute code...
@@ -343,7 +343,9 @@ int infs_TraverseDirTree( char *dir, int depth,
          if( type == 1 &&
            ( strcmp( entry.d_name, "." ) != 0 &&          // not in self
              strcmp( entry.d_name, ".." ) != 0 ) ) {      // not in parent
-            if( func_dir_pre != NULL ) (*func_dir_pre)( arg_dir_pre );
+            if( func_dir_pre != NULL ) {
+               (*func_dir_pre)( arg_dir_pre, entry.d_name );
+            }
 
             ient = infs_TraverseDirTree( entry.d_name, depth+1,
                                 func_dir_pre,  arg_dir_pre,
@@ -356,7 +358,9 @@ int infs_TraverseDirTree( char *dir, int depth,
                ierr = -3;
             }
 
-            if( func_dir_post != NULL ) (*func_dir_post)( arg_dir_post );
+            if( func_dir_post != NULL ) {
+               (*func_dir_post)( arg_dir_post, entry.d_name );
+            }
          }
       }
    }
