@@ -11,7 +11,7 @@ COPTS += -DNO_DEBUG2_
 
 ############################### Target ##############################
 all: libs
-	$(CC) $(COPTS) -Wl,-rpath=. main.c -L. -lINfs
+	$(CC) $(COPTS) -Wl,-rpath=.,-rpath=$(MY_DIR) main.c -L. -lINfs
 
 libs:
 	$(CC) -c $(COPTS) infs.c
