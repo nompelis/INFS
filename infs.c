@@ -340,26 +340,32 @@ int infs_TraverseDirTree( char *dir, int depth,
 
          // execute code for directory, recurse, and execute code...
          // (NO ERROR TRAPPING)
-         if( type == 1 &&
-           ( strcmp( entry.d_name, "." ) != 0 &&          // not in self
-             strcmp( entry.d_name, ".." ) != 0 ) ) {      // not in parent
-            if( func_dir_pre != NULL ) {
-               (*func_dir_pre)( arg_dir_pre, entry.d_name );
-            }
+         if( type == 1 ) {
+            if( strcmp( entry.d_name, "." ) != 0 &&          // not in self
+                strcmp( entry.d_name, ".." ) != 0 ) {        // not in parent
 
-            ient = infs_TraverseDirTree( entry.d_name, depth+1,
-                                func_dir_pre,  arg_dir_pre,
-                                func_dir_post, arg_dir_post,
-                                func_reg,      arg_reg );
-            if( ient != 0 ) {
+               if( func_dir_pre != NULL ) {
+                  (*func_dir_pre)( arg_dir_pre, entry.d_name );
+               }
+
+               ient = infs_TraverseDirTree( entry.d_name, depth+1,
+                                   func_dir_pre,  arg_dir_pre,
+                                   func_dir_post, arg_dir_post,
+                                   func_reg,      arg_reg );
+               if( ient != 0 ) {
 #ifdef _DEBUG_
-               fprintf( stdout," [%s]  Returned error! \"%d\" \n",FUNC, ient);
+                  fprintf( stdout," [%s]  Returned error! \"%d\" \n",FUNC,ient);
 #endif
-               ierr = -3;
-            }
+                  ierr = -3;
+               }
 
-            if( func_dir_post != NULL ) {
-               (*func_dir_post)( arg_dir_post, entry.d_name );
+               if( func_dir_post != NULL ) {
+                  (*func_dir_post)( arg_dir_post, entry.d_name );
+               }
+#ifdef _DEBUG_
+            } else {
+               fprintf( stdout, " [%s]  Skipping \"%s\"\n",FUNC,entry.d_name);
+#endif
             }
          }
       }
