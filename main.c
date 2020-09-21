@@ -55,7 +55,11 @@ int dummy_func( void *arg, char *name )
    char *key = (char *) arg;
    int num = strlen( key );
 
+#ifdef _DEBUG_
+   fprintf( stdout, "Dummy func: \"%s\" (string was: %s)\n",name,(char *) arg);
+#else
    (void) inUtils_File_HashXOR( key, num, name );
+#endif
 
    return 0;
 }
@@ -80,6 +84,7 @@ func_p = &dummy_func;
 (void) infs_TraverseDirTree( ".", 0,
              NULL, "DIR_pre World!!",
              NULL, "DIR_post World!",
+          // func_p, "DUMMY_STRING" );
              func_p, (char *) (argv[1]));
 
    return(0);
